@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Pressable,
-  SafeAreaView,Alert,
+  SafeAreaView,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -15,8 +16,9 @@ import {
   BannerAdSize,
   TestIds,
 } from 'react-native-google-mobile-ads';
+import { supabase } from '../supabase'; // ← Make sure you have your Supabase client here
 
-export default function OrderScreen({ route, navigation }) {
+export default function OrderDetailScreen({ route, navigation }) {
   const { item } = route.params;
   const [quantity, setQuantity] = useState(1);
   const totalPrice = item.price * quantity;
@@ -28,10 +30,38 @@ export default function OrderScreen({ route, navigation }) {
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
-  const handleAddToCart = () => {
-    Alert.alert('Added to Cart', `You added ${item.itemName} x${quantity} to your cart.`);
-    console.log('✅ Added to cart:', { ...item, quantity });
-    // Store to context/redux here
+  // 📌 Add to Cart Function (Saves to Supabase)
+  const handleAddToCart = async () => {
+    try {
+      // Get logged-in user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Login Required', 'You must be logged in to add items to your cart.');
+        return;
+      }
+
+      // Insert into 'cart' table
+      const { error } = await supabase.from('cart').insert([
+        {
+          user_id: user.id,
+          item_id: item.id, // Make sure `item.id` exists in your product table
+          item_name: item.itemName,
+          price: item.price,
+          quantity: quantity,
+          image_url: item.itemurl,
+        },
+      ]);
+
+      if (error) {
+        console.error('❌ Add to cart error:', error);
+        Alert.alert('Error', 'Could not add to cart. Please try again.');
+      } else {
+        Alert.alert('✅ Added to Cart', `${item.itemName} x${quantity} has been added.`);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      Alert.alert('Error', 'Something went wrong.');
+    }
   };
 
   const handlePlaceOrder = () => {
@@ -79,9 +109,7 @@ export default function OrderScreen({ route, navigation }) {
             <Text style={styles.itemName}>{item.itemName}</Text>
             <Text style={styles.price}>Price: ₹{item.price}</Text>
             <Text style={styles.total}>Total: ₹{totalPrice}</Text>
-            <Text style={styles.description}>
-              {item.description }
-            </Text>
+            <Text style={styles.description}>{item.description}</Text>
 
             {/* Add to Cart Button */}
             <Pressable

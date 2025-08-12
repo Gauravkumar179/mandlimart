@@ -35,7 +35,7 @@ export default function HomeScreen({ navigation }) {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from('product')
-        .select('itemName, itemurl, price,description');
+        .select('id,itemName, itemurl, price,description');
 
       if (error) {
         console.error('❌ Failed to fetch products:', error.message);
@@ -141,10 +141,11 @@ export default function HomeScreen({ navigation }) {
               style={styles.productBox}
               onPress={() => {
                 // Ensure `item` contains only serializable primitives
-                navigation.navigate('Order', {
+                navigation.navigate('Orderdetails', {
                   item: {
                     itemName: item.itemName,
                     itemurl: item.itemurl,
+                    id: item.id,
                     price: item.price,
                     description: item.description || 'No description available.',
                   },
