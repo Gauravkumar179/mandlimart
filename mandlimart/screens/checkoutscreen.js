@@ -68,7 +68,9 @@ export default function CheckoutScreen({ route, navigation }) {
       const addressData = {
         name: selectedAddress.full_name,
         phone: selectedAddress.phone,
-        street: selectedAddress.address_line,
+        address_line: selectedAddress.address_line,
+        country: selectedAddress.country,
+        street: selectedAddress.street,
         city: selectedAddress.city,
         state: selectedAddress.state,
         pincode: selectedAddress.pincode
@@ -146,7 +148,10 @@ export default function CheckoutScreen({ route, navigation }) {
           >
             <Text style={styles.addressName}>{item.full_name}</Text>
             <Text style={styles.addressLine}>
-              {item.address_line}, {item.city}, {item.state} - {item.pincode}
+              {item.address_line}
+            </Text>
+             <Text style={styles.addressLine}>
+              {item.street}, {item.city}, {item.state},{item.country} - {item.pincode}
             </Text>
             <Text style={styles.addressPhone}>📞 {item.phone}</Text>
           </TouchableOpacity>

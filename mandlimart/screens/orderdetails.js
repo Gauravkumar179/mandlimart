@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,12 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
   BannerAd,
   BannerAdSize,
   TestIds,
 } from 'react-native-google-mobile-ads';
-import { supabase } from '../supabase'; // ← Make sure you have your Supabase client here
+import { supabase } from '../supabase';
 
 export default function OrderDetailScreen({ route, navigation }) {
   const { item } = route.params;
@@ -25,26 +24,23 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   const adUnitId = __DEV__
     ? TestIds.BANNER
-    : 'ca-app-pub-3940256099942544/6300978111'; // Replace with real ad ID
+    : 'ca-app-pub-3940256099942544/6300978111'; // Replace with your real ad unit ID
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
-  // 📌 Add to Cart Function (Saves to Supabase)
   const handleAddToCart = async () => {
     try {
-      // Get logged-in user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Login Required', 'You must be logged in to add items to your cart.');
         return;
       }
 
-      // Insert into 'cart' table
       const { error } = await supabase.from('cart').insert([
         {
           user_id: user.id,
-          item_id: item.id, // Make sure `item.id` exists in your product table
+          item_id: item.id,
           item_name: item.itemName,
           price: item.price,
           quantity: quantity,
@@ -53,10 +49,10 @@ export default function OrderDetailScreen({ route, navigation }) {
       ]);
 
       if (error) {
-        console.error('❌ Add to cart error:', error);
+        console.error('Add to cart error:', error);
         Alert.alert('Error', 'Could not add to cart. Please try again.');
       } else {
-        Alert.alert('✅ Added to Cart', `${item.itemName} x${quantity} has been added.`);
+        Alert.alert('Added to Cart', `${item.itemName} x${quantity} has been added.`);
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -72,22 +68,20 @@ export default function OrderDetailScreen({ route, navigation }) {
     });
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerBackTitleVisible: false,
+      headerTitleAlign: 'center',
+      headerTitle: 'Order Details',
+      headerStyle: { backgroundColor: '#2e86de' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+    });
+  }, [navigation]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Header */}
-      <View style={styles.appBar}>
-        <Icon
-          name="arrow-back"
-          color="#fff"
-          size={24}
-          style={styles.backIcon}
-          onPress={() => navigation.goBack()}
-        />
-        <Text style={styles.appTitle}>Order Details</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      {/* Main Content */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
           {/* Image + Quantity */}
@@ -111,7 +105,6 @@ export default function OrderDetailScreen({ route, navigation }) {
             <Text style={styles.total}>Total: ₹{totalPrice}</Text>
             <Text style={styles.description}>{item.description}</Text>
 
-            {/* Add to Cart Button */}
             <Pressable
               onPress={handleAddToCart}
               android_ripple={{ color: '#ffffff30' }}
@@ -123,7 +116,6 @@ export default function OrderDetailScreen({ route, navigation }) {
               <Text style={styles.btnText}>Add to Cart</Text>
             </Pressable>
 
-            {/* Buy Now Button */}
             <Pressable
               onPress={handlePlaceOrder}
               android_ripple={{ color: '#ffffff30' }}
@@ -144,8 +136,8 @@ export default function OrderDetailScreen({ route, navigation }) {
           unitId={adUnitId}
           size={BannerAdSize.INLINE_ADAPTIVE_BANNER}
           requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-          onAdLoaded={() => console.log('✅ Ad loaded')}
-          onAdFailedToLoad={(error) => console.warn('❌ Ad failed', error)}
+          onAdLoaded={() => console.log('Ad loaded')}
+          onAdFailedToLoad={(error) => console.warn('Ad failed', error)}
         />
       </View>
     </SafeAreaView>
@@ -153,42 +145,25 @@ export default function OrderDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  appBar: {
-    backgroundColor: '#007AFF',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  appTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  backIcon: {
-    padding: 4,
-  },
   scrollContainer: {
     padding: 20,
+    flexGrow: 1,
   },
   container: {
-    flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
+    flexDirection: 'column',
   },
   left: {
-    width: '80%',
+    width: '100%',
     alignItems: 'center',
   },
   right: {
     width: '100%',
-    paddingLeft: 10,
+    paddingLeft: 0,
+    marginTop: 20,
   },
   image: {
     width: '100%',
-    height: '60%',
+    height: 250,        // FIXED height here — this is crucial
     borderRadius: 12,
     resizeMode: 'cover',
   },

@@ -1,7 +1,17 @@
 import React, { useState, useCallback, useContext } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchImageLibrary } from 'react-native-image-picker';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // make sure this is installed
 import { supabase } from '../supabase';
 import { UserContext } from '../context/userContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +25,7 @@ export default function ProfileScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(true);
   const { user } = useContext(UserContext);
 
   useFocusEffect(
@@ -41,12 +52,15 @@ export default function ProfileScreen({ navigation }) {
       setPincode(data.pincode || '');
       setPhone(data.phone || '');
       setImageBase64(data.image_base64 || null);
+
+      setIsEditMode(false);
     }
     if (error) console.log(error);
     setLoading(false);
   };
 
   const selectImage = () => {
+    if (!isEditMode) return;
     launchImageLibrary({ mediaType: 'photo', includeBase64: true }, (response) => {
       if (response.didCancel) return;
       if (response.errorCode) {
@@ -70,6 +84,7 @@ export default function ProfileScreen({ navigation }) {
       .from('profiles')
       .upsert([
         {
+          id: user.id,
           full_name: name,
           street,
           city,
@@ -86,44 +101,91 @@ export default function ProfileScreen({ navigation }) {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      Alert.alert('Success', 'Profile saved successfully', [
-        { text: 'OK', onPress: () => navigation.navigate('Home') },
-      ]);
+      Alert.alert('Success', 'Profile updated successfully');
+      setIsEditMode(false);
     }
   };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <TouchableOpacity onPress={selectImage} style={styles.imagePicker}>
-          {imageBase64 ? (
-            <Image source={{ uri: imageBase64 }} style={styles.image} />
-          ) : (
-            <Text style={styles.imageText}>Select Profile Image</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.imagePickerWrapper}>
+          <TouchableOpacity onPress={selectImage} style={styles.imagePicker}>
+            {imageBase64 ? (
+              <Image source={{ uri: imageBase64 }} style={styles.image} />
+            ) : (
+              <Text style={styles.imageText}>Select Profile Image</Text>
+            )}
+          </TouchableOpacity>
 
-        <TextInput style={styles.input} placeholder="Full Name" value={name} onChangeText={setName} />
-        <TextInput style={styles.input} placeholder="Street" value={street} onChangeText={setStreet} />
-        <TextInput style={styles.input} placeholder="City" value={city} onChangeText={setCity} />
-        <TextInput style={styles.input} placeholder="State" value={stateName} onChangeText={setStateName} />
+          {/* Edit Icon Button */}
+          <TouchableOpacity
+            style={styles.editIconWrapper}
+            onPress={() => setIsEditMode((prev) => !prev)}
+          >
+            <Icon name={isEditMode ? 'close' : 'edit'} size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
         <TextInput
-          style={styles.input}
+          style={[styles.input, !isEditMode && styles.disabledInput]}
+          placeholder="Full Name"
+          value={name}
+          onChangeText={setName}
+          editable={isEditMode}
+        />
+        <TextInput
+          style={[styles.input, !isEditMode && styles.disabledInput]}
+          placeholder="Street"
+          value={street}
+          onChangeText={setStreet}
+          editable={isEditMode}
+        />
+        <TextInput
+          style={[styles.input, !isEditMode && styles.disabledInput]}
+          placeholder="City"
+          value={city}
+          onChangeText={setCity}
+          editable={isEditMode}
+        />
+        <TextInput
+          style={[styles.input, !isEditMode && styles.disabledInput]}
+          placeholder="State"
+          value={stateName}
+          onChangeText={setStateName}
+          editable={isEditMode}
+        />
+        <TextInput
+          style={[styles.input, !isEditMode && styles.disabledInput]}
           placeholder="Pincode"
           value={pincode}
           keyboardType="numeric"
           onChangeText={setPincode}
+          editable={isEditMode}
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, !isEditMode && styles.disabledInput]}
           placeholder="Phone"
           value={phone}
           keyboardType="phone-pad"
           onChangeText={setPhone}
+          editable={isEditMode}
         />
 
-        <TouchableOpacity onPress={saveProfile} style={styles.saveButton} disabled={loading}>
-          <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save Profile'}</Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (isEditMode) {
+              saveProfile();
+            } else {
+              setIsEditMode(true);
+            }
+          }}
+          style={styles.saveButton}
+          disabled={loading}
+        >
+          <Text style={styles.saveButtonText}>
+            {loading ? 'Saving...' : isEditMode ? 'Save Profile' : 'Update Profile'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -135,6 +197,12 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
+  imagePickerWrapper: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
   imagePicker: {
     width: 120,
     height: 120,
@@ -142,8 +210,17 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
     overflow: 'hidden',
+  },
+  editIconWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#28a745',
+    borderRadius: 15,
+    padding: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   imageText: {
     color: '#777',
@@ -161,6 +238,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+  },
+  disabledInput: {
+    backgroundColor: '#f5f5f5',
+    color: '#555',
   },
   saveButton: {
     backgroundColor: '#28a745',

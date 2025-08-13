@@ -54,8 +54,14 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* App Bar */}
-      <View style={styles.appBar}>
-        <Text style={styles.appTitle}>Mandlimart</Text>
+     
+         <View style={styles.appBar}>
+        {/* Replace text with image */}
+        <Image
+          source={require('../../assets/mandlimart.png')} // put your image file path here
+          style={styles.appLogo}
+          resizeMode="contain"
+        />
         <View style={styles.rightSection}>
           <Text style={styles.userName}>
             {typeof user?.user_metadata?.full_name === 'string'
@@ -168,7 +174,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   appBar: {
-    paddingTop: 50,
+    paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 12,
     backgroundColor: '#007AFF',
@@ -181,6 +187,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  appLogo: {
+  width: 40,    // Adjust width as needed
+  height: 40,    // Adjust height as needed
+},
+
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',

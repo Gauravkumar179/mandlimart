@@ -16,7 +16,8 @@ export default function BottomTab() {
         tabBarIcon: ({ color, size }) => {
           let iconName = 'home';
           if (route.name === 'Home') iconName = 'home-outline';
-          if (route.name === 'Orders') iconName = 'list-outline';
+         if (route.name === 'Orders') iconName = 'receipt-outline';
+
           if (route.name === 'Cart') iconName = 'cart-outline';
           if (route.name === 'Profile') iconName = 'person-outline';
           
